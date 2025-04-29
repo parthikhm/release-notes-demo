@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import difflib
+import re
 from datetime import datetime
 from github import Github
 import openai
@@ -89,6 +90,45 @@ def get_changes(repo, base_sha, head_sha):
         logger.error(f"Failed to get changes: {str(e)}")
         sys.exit(1)
 
+def analyze_ui_changes(patch):
+    """Analyze UI changes in HTML/Blade files."""
+    ui_changes = []
+
+    # Check for modal changes
+    if 'modal' in patch.lower():
+        if 'livewire' in patch.lower():
+            if '@livewire' in patch:
+                ui_changes.append("Removed Livewire component from modal")
+            else:
+                ui_changes.append("Added Livewire integration to modal")
+
+        # Check for form fields
+        form_fields = []
+        if 'input' in patch.lower():
+            input_types = re.findall(r'type="([^"]*)"', patch)
+            for input_type in input_types:
+                if input_type not in ['hidden', 'submit', 'button']:
+                    form_fields.append(input_type)
+
+            if form_fields:
+                ui_changes.append(f"Added form fields: {', '.join(form_fields)}")
+
+        # Check for button changes
+        if 'button' in patch.lower():
+            button_types = re.findall(r'class="([^"]*btn[^"]*)"', patch)
+            if button_types:
+                ui_changes.append(f"Modified buttons: {', '.join(button_types)}")
+
+    # Check for layout changes
+    if 'container' in patch.lower() or 'row' in patch.lower() or 'col' in patch.lower():
+        ui_changes.append("Modified layout structure")
+
+    # Check for styling changes
+    if 'class="' in patch or 'style="' in patch:
+        ui_changes.append("Updated styling")
+
+    return ui_changes
+
 def analyze_file_changes(file):
     """Analyze changes in a specific file."""
     try:
@@ -115,14 +155,20 @@ def analyze_file_changes(file):
 
                 # Try to determine what kind of changes were made
                 changes = []
+
+                # Check for UI changes in HTML/Blade files
+                if file.filename.endswith(('.html', '.blade.php', '.vue', '.jsx', '.tsx')):
+                    ui_changes = analyze_ui_changes(patch)
+                    if ui_changes:
+                        changes.extend(ui_changes)
+
+                # Check for other types of changes
                 if 'function' in patch.lower() or 'def ' in patch or 'function ' in patch:
                     changes.append("Function changes")
                 if 'class' in patch.lower() or 'class ' in patch:
                     changes.append("Class changes")
                 if 'api' in patch.lower() or 'endpoint' in patch.lower():
                     changes.append("API changes")
-                if 'ui' in patch.lower() or 'html' in patch.lower() or 'css' in patch.lower() or 'js' in patch.lower():
-                    changes.append("UI changes")
                 if 'bug' in patch.lower() or 'fix' in patch.lower():
                     changes.append("Bug fixes")
                 if 'test' in patch.lower():

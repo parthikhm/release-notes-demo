@@ -34,7 +34,13 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @livewire('dynamic-modal-body')
+                        <input type="text" class="form-control" placeholder="Enter your name" wire:model="name">
+                        <input type="email" class="form-control mt-2" placeholder="Enter your email"
+                            wire:model="email">
+                        <input type="text" class="form-control mt-2" placeholder="Enter your phone number"
+                            wire:model="phone">
+                        <input type="text" class="form-control mt-2" placeholder="Enter your address"
+                            wire:model="address">
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
