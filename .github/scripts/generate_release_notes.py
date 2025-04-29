@@ -104,6 +104,8 @@ def analyze_ui_changes(patch):
                 ui_changes.append("Removed Livewire component from modal")
             else:
                 ui_changes.append("Added Livewire integration to modal")
+        else:
+            ui_changes.append("Enhanced modal functionality for better user interaction")
 
         # Check for form fields
         form_fields = []
@@ -124,11 +126,31 @@ def analyze_ui_changes(patch):
 
     # Check for layout changes
     if 'container' in patch.lower() or 'row' in patch.lower() or 'col' in patch.lower():
-        ui_changes.append("Modified layout structure")
+        ui_changes.append("Improved layout structure for better content organization")
 
     # Check for styling changes
     if 'class="' in patch or 'style="' in patch:
-        ui_changes.append("Updated styling")
+        ui_changes.append("Enhanced visual styling for a more polished user experience")
+
+    # Check for responsive design changes
+    if 'media' in patch.lower() or '@media' in patch.lower():
+        ui_changes.append("Improved responsive design for better mobile experience")
+
+    # Check for accessibility improvements
+    if 'aria-' in patch.lower() or 'role=' in patch.lower() or 'tabindex=' in patch.lower():
+        ui_changes.append("Enhanced accessibility features for better usability")
+
+    # Check for navigation changes
+    if 'nav' in patch.lower() or 'menu' in patch.lower() or 'sidebar' in patch.lower():
+        ui_changes.append("Improved navigation structure for easier site exploration")
+
+    # Check for card or panel changes
+    if 'card' in patch.lower() or 'panel' in patch.lower():
+        ui_changes.append("Enhanced content presentation with improved card design")
+
+    # Check for table changes
+    if 'table' in patch.lower() or 'thead' in patch.lower() or 'tbody' in patch.lower():
+        ui_changes.append("Improved data presentation with enhanced table layout")
 
     return ui_changes
 
@@ -426,10 +448,28 @@ def format_release_notes(commit_info, changes, analysis_summary, version):
 
             # UI changes
             if file.filename.endswith(('.html', '.blade.php', '.vue', '.jsx', '.tsx', '.css', '.scss')):
-                if 'modal' in patch.lower() or 'button' in patch.lower() or 'form' in patch.lower():
-                    ui_changes.append(f"Updated UI in {file.filename}")
+                # Get the base filename without path
+                base_filename = os.path.basename(file.filename)
+
+                # Check for specific UI components
+                if 'modal' in patch.lower():
+                    ui_changes.append(f"Enhanced modal functionality in {base_filename} for improved user interaction")
+                elif 'button' in patch.lower():
+                    ui_changes.append(f"Improved button design and functionality in {base_filename}")
+                elif 'form' in patch.lower():
+                    ui_changes.append(f"Enhanced form elements in {base_filename} for better data entry")
                 elif 'style' in patch.lower() or 'class' in patch.lower():
-                    ui_changes.append(f"Improved styling in {file.filename}")
+                    ui_changes.append(f"Refined visual styling in {base_filename} for a more polished look")
+                elif 'layout' in patch.lower() or 'container' in patch.lower():
+                    ui_changes.append(f"Redesigned layout in {base_filename} for better content organization")
+                elif 'responsive' in patch.lower() or 'media' in patch.lower():
+                    ui_changes.append(f"Improved responsive design in {base_filename} for better mobile experience")
+                elif 'accessibility' in patch.lower() or 'aria-' in patch.lower():
+                    ui_changes.append(f"Enhanced accessibility features in {base_filename} for better usability")
+                elif 'table' in patch.lower():
+                    ui_changes.append(f"Improved data presentation in {base_filename} with enhanced table layout")
+                else:
+                    ui_changes.append(f"Enhanced user interface in {base_filename} for better user experience")
 
             # Feature changes
             if '+' in patch and ('function' in patch.lower() or 'def ' in patch or 'function ' in patch):
@@ -439,7 +479,12 @@ def format_release_notes(commit_info, changes, analysis_summary, version):
 
             # API changes
             if 'api' in patch.lower() or 'endpoint' in patch.lower():
-                api_changes.append(f"Modified API in {file.filename}")
+                if 'format' in patch.lower() or 'response' in patch.lower():
+                    api_changes.append(f"Improved API response formatting in {file.filename}")
+                elif 'error' in patch.lower() or 'exception' in patch.lower():
+                    api_changes.append(f"Enhanced error handling in {file.filename}")
+                else:
+                    api_changes.append(f"Modified API in {file.filename}")
 
             # Bug fixes
             if 'bug' in patch.lower() or 'fix' in patch.lower():
@@ -449,49 +494,38 @@ def format_release_notes(commit_info, changes, analysis_summary, version):
             if not any([ui_changes, feature_changes, api_changes, bug_fixes]):
                 other_changes.append(f"Updated {file.filename}")
 
-    # Add categorized sections
+    # Add categorized sections with emojis
     if ui_changes:
-        notes.append("User Interface")
-        notes.append("")
+        notes.append("✨ User Interface")
         for change in ui_changes:
             notes.append(f"- {change}")
         notes.append("")
 
     if feature_changes:
-        notes.append("New Features")
-        notes.append("")
+        notes.append("🚀 New Features")
         for change in feature_changes:
             notes.append(f"- {change}")
         notes.append("")
 
     if api_changes:
-        notes.append("API Improvements")
-        notes.append("")
+        notes.append("🛠️ API Enhancements")
         for change in api_changes:
             notes.append(f"- {change}")
         notes.append("")
 
     if bug_fixes:
-        notes.append("Bug Fixes")
-        notes.append("")
+        notes.append("🐞 Bug Fixes")
         for change in bug_fixes:
             notes.append(f"- {change}")
         notes.append("")
 
     if other_changes:
-        notes.append("Other Updates")
-        notes.append("")
+        notes.append("📝 Other Updates")
         for change in other_changes:
             notes.append(f"- {change}")
         notes.append("")
 
-    # Add detailed analysis
-    notes.append("Detailed Changes")
-    notes.append("")
-    notes.append(analysis_summary)
-
     # Add footer with version and date
-    notes.append("")
     notes.append("-" * 69)
     notes.append(f"Version: {version} | Date: {commit_info['date']} at {commit_info['time']} | Author: {commit_info['author']}")
 
