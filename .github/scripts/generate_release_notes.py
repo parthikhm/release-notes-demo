@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import difflib
 from datetime import datetime
 from github import Github
 import openai
@@ -86,39 +87,140 @@ def get_changes(repo, base_sha, head_sha):
         logger.error(f"Failed to get changes: {str(e)}")
         sys.exit(1)
 
-def analyze_changes_with_ai(changes):
-    """Use OpenAI to analyze and summarize code changes."""
-    logger.info("Analyzing changes with AI")
+def analyze_file_changes(file):
+    """Analyze changes in a specific file."""
     try:
-        file_names = [f.filename for f in changes['files']]
-        commit_count = len(changes['commits'])
-
-        # Create a simple summary without using OpenAI API
-        summary = f"This update includes changes to {len(file_names)} files across {commit_count} commits. "
-
-        # Add details about each file
-        for file in changes['files']:
+        # Get the file content before and after the change
+        if hasattr(file, 'raw_url'):
+            # For added files, we only have the new content
             if file.status == 'added':
-                summary += f"Added new file: {file.filename}. "
-            elif file.status == 'modified':
-                summary += f"Modified: {file.filename}. "
-            elif file.status == 'removed':
-                summary += f"Removed: {file.filename}. "
+                return {
+                    'status': 'added',
+                    'filename': file.filename,
+                    'changes': 'New file added',
+                    'additions': file.additions,
+                    'deletions': 0
+                }
 
-        logger.info("Generated summary of changes")
-        return summary
+            # For modified files, we need to get the diff
+            elif file.status == 'modified':
+                # Get the patch to analyze the changes
+                patch = file.patch if hasattr(file, 'patch') else "No patch available"
+
+                # Count the number of additions and deletions
+                additions = file.additions
+                deletions = file.deletions
+
+                # Try to determine what kind of changes were made
+                changes = []
+                if 'function' in patch.lower() or 'def ' in patch or 'function ' in patch:
+                    changes.append("Function changes")
+                if 'class' in patch.lower() or 'class ' in patch:
+                    changes.append("Class changes")
+                if 'api' in patch.lower() or 'endpoint' in patch.lower():
+                    changes.append("API changes")
+                if 'ui' in patch.lower() or 'html' in patch.lower() or 'css' in patch.lower() or 'js' in patch.lower():
+                    changes.append("UI changes")
+                if 'bug' in patch.lower() or 'fix' in patch.lower():
+                    changes.append("Bug fixes")
+                if 'test' in patch.lower():
+                    changes.append("Test changes")
+
+                # If no specific changes were detected, provide a generic message
+                if not changes:
+                    changes = ["Code modifications"]
+
+                return {
+                    'status': 'modified',
+                    'filename': file.filename,
+                    'changes': ", ".join(changes),
+                    'additions': additions,
+                    'deletions': deletions,
+                    'patch': patch
+                }
+
+            # For removed files, we only know it was deleted
+            elif file.status == 'removed':
+                return {
+                    'status': 'removed',
+                    'filename': file.filename,
+                    'changes': 'File removed',
+                    'additions': 0,
+                    'deletions': file.deletions
+                }
+
+        # Fallback for files without raw_url
+        return {
+            'status': file.status,
+            'filename': file.filename,
+            'changes': f"File {file.status}",
+            'additions': getattr(file, 'additions', 0),
+            'deletions': getattr(file, 'deletions', 0)
+        }
+    except Exception as e:
+        logger.error(f"Error analyzing file {file.filename}: {str(e)}")
+        return {
+            'status': file.status,
+            'filename': file.filename,
+            'changes': f"Error analyzing changes: {str(e)}",
+            'additions': 0,
+            'deletions': 0
+        }
+
+def analyze_changes_with_ai(changes):
+    """Analyze code changes and generate a detailed summary."""
+    logger.info("Analyzing code changes")
+    try:
+        # Analyze each file's changes
+        file_analyses = []
+        for file in changes['files']:
+            analysis = analyze_file_changes(file)
+            file_analyses.append(analysis)
+
+        # Group files by status
+        added_files = [f for f in file_analyses if f['status'] == 'added']
+        modified_files = [f for f in file_analyses if f['status'] == 'modified']
+        removed_files = [f for f in file_analyses if f['status'] == 'removed']
+
+        # Generate a detailed summary
+        summary = []
+
+        # Summary of added files
+        if added_files:
+            summary.append("Added Files:")
+            for file in added_files:
+                summary.append(f"- {file['filename']}")
+
+        # Summary of modified files
+        if modified_files:
+            summary.append("\nModified Files:")
+            for file in modified_files:
+                summary.append(f"- {file['filename']}: {file['changes']} (+{file['additions']}/-{file['deletions']} lines)")
+
+        # Summary of removed files
+        if removed_files:
+            summary.append("\nRemoved Files:")
+            for file in removed_files:
+                summary.append(f"- {file['filename']}")
+
+        # Add a general summary
+        total_additions = sum(f['additions'] for f in file_analyses)
+        total_deletions = sum(f['deletions'] for f in file_analyses)
+        summary.append(f"\nTotal Changes: {len(file_analyses)} files changed, {total_additions} additions, {total_deletions} deletions")
+
+        return "\n".join(summary)
     except Exception as e:
         logger.error(f"Failed to analyze changes: {str(e)}")
-        return "Unable to generate summary due to an error."
+        return "Unable to generate detailed summary due to an error."
 
-def format_release_notes(commit_info, changes, ai_summary):
+def format_release_notes(commit_info, changes, analysis_summary):
     """Format the release notes in the specified format."""
     logger.info("Formatting release notes")
     notes = []
     notes.append("Release Notes")
     notes.append("=============\n")
 
-    notes.append(f"Date: {commit_info['date']}")
+    notes.append(f"🗓️ Date: {commit_info['date']} at {commit_info['time']}")
     notes.append(f"Author: {commit_info['author']}\n")
 
     # Add file changes
@@ -130,9 +232,9 @@ def format_release_notes(commit_info, changes, ai_summary):
         elif file.status == 'removed':
             notes.append(f"- Deleted: `{file.filename}`")
 
-    # Add AI summary
-    notes.append("\n📝 Summary of Changes:")
-    notes.append(ai_summary)
+    # Add detailed analysis
+    notes.append("\n📝 Detailed Analysis:")
+    notes.append(analysis_summary)
     notes.append("\n" + "="*50 + "\n")
 
     formatted_notes = "\n".join(notes)
@@ -188,11 +290,11 @@ def main():
         # Get changes
         changes = get_changes(repo, base_sha, current_sha)
 
-        # Analyze changes with AI
-        ai_summary = analyze_changes_with_ai(changes)
+        # Analyze changes
+        analysis_summary = analyze_changes_with_ai(changes)
 
         # Format release notes
-        new_content = format_release_notes(commit_info, changes, ai_summary)
+        new_content = format_release_notes(commit_info, changes, analysis_summary)
 
         # Update the file
         update_release_notes(new_content)
