@@ -4,6 +4,20 @@ Release Notes
 Date: 2025-04-29
 Author: parthikhm
 
+- Modified: `resources/views/welcome.blade.php`
+
+📝 Summary of Changes:
+This update includes changes to 1 files across 1 commits. Modified: resources/views/welcome.blade.php. 
+
+==================================================
+
+
+Release Notes
+=============
+
+Date: 2025-04-29
+Author: parthikhm
+
 - Modified: `.github/scripts/generate_release_notes.py`
 - Modified: `.github/workflows/generate-release-notes.yml`
 - Modified: `release_note.txt`
