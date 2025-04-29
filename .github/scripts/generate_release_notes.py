@@ -92,32 +92,24 @@ def analyze_changes_with_ai(changes):
     try:
         file_names = [f.filename for f in changes['files']]
         commit_count = len(changes['commits'])
-        prompt = f"""Analyze these code changes and provide a clear, concise summary:
-        Files changed: {file_names}
-        Number of commits: {commit_count}
 
-        Please summarize the major changes in simple language, focusing on:
-        1. New features or functionality added
-        2. Bug fixes or improvements
-        3. API changes
-        4. Important refactoring
-        """
+        # Create a simple summary without using OpenAI API
+        summary = f"This update includes changes to {len(file_names)} files across {commit_count} commits. "
 
-        logger.info("Sending request to OpenAI API")
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a technical writer who creates clear, concise summaries of code changes."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+        # Add details about each file
+        for file in changes['files']:
+            if file.status == 'added':
+                summary += f"Added new file: {file.filename}. "
+            elif file.status == 'modified':
+                summary += f"Modified: {file.filename}. "
+            elif file.status == 'removed':
+                summary += f"Removed: {file.filename}. "
 
-        summary = response.choices[0].message.content
-        logger.info("Successfully received AI summary")
+        logger.info("Generated summary of changes")
         return summary
     except Exception as e:
-        logger.error(f"Failed to analyze changes with AI: {str(e)}")
-        return "Unable to generate AI summary due to an error."
+        logger.error(f"Failed to analyze changes: {str(e)}")
+        return "Unable to generate summary due to an error."
 
 def format_release_notes(commit_info, changes, ai_summary):
     """Format the release notes in the specified format."""
@@ -164,6 +156,13 @@ def update_release_notes(new_content):
         with open(file_path, 'w') as f:
             f.write(new_content + "\n\n" + existing_content)
         logger.info("Successfully updated release_note.txt")
+
+        # Verify the file was created
+        if file_path.exists():
+            file_size = file_path.stat().st_size
+            logger.info(f"Release notes file exists with size: {file_size} bytes")
+        else:
+            logger.error("Release notes file was not created")
     except Exception as e:
         logger.error(f"Failed to update release notes file: {str(e)}")
         sys.exit(1)

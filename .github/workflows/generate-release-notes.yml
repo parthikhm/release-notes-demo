@@ -36,16 +36,17 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python .github/scripts/generate_release_notes.py
-          echo "::set-output name=status::success"
+          echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Check if release notes were generated
         run: |
           if [ -f "release_note.txt" ]; then
             echo "✅ Release notes file was created successfully"
-            echo "::set-output name=file_exists::true"
+            echo "file_exists=true" >> $GITHUB_OUTPUT
+            cat release_note.txt
           else
             echo "❌ Release notes file was not created"
-            echo "::set-output name=file_exists::false"
+            echo "file_exists=false" >> $GITHUB_OUTPUT
             exit 1
           fi
         id: check-file
