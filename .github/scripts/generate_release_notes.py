@@ -162,17 +162,73 @@ def analyze_file_changes(file):
                     if ui_changes:
                         changes.extend(ui_changes)
 
-                # Check for other types of changes
+                # Check for new functions created
+                new_functions = []
+                if '+' in patch and ('function' in patch.lower() or 'def ' in patch or 'function ' in patch):
+                    # Look for function definitions with + at the start of the line
+                    function_matches = re.findall(r'^\+\s*(?:function|def)\s+([a-zA-Z0-9_]+)', patch, re.MULTILINE)
+                    if function_matches:
+                        new_functions.extend(function_matches)
+
+                if new_functions:
+                    changes.append(f"Created new functions: {', '.join(new_functions)}")
+
+                # Check for new routes created (for Laravel/PHP files)
+                new_routes = []
+                if file.filename.endswith(('.php', '.routes.php')) and '+' in patch:
+                    # Look for route definitions with + at the start of the line
+                    route_matches = re.findall(r'^\+\s*Route::(get|post|put|delete|patch)\s*\([\'"]([^\'"]+)[\'"]', patch, re.MULTILINE)
+                    if route_matches:
+                        for method, path in route_matches:
+                            new_routes.append(f"{method.upper()} {path}")
+
+                if new_routes:
+                    changes.append(f"Created new routes: {', '.join(new_routes)}")
+
+                # Check for specific function changes (existing functions modified)
                 if 'function' in patch.lower() or 'def ' in patch or 'function ' in patch:
-                    changes.append("Function changes")
+                    # Extract function names if possible
+                    function_names = re.findall(r'(?:function|def)\s+([a-zA-Z0-9_]+)', patch)
+                    if function_names:
+                        changes.append(f"Modified functions: {', '.join(function_names)}")
+                    else:
+                        changes.append("Function changes")
+
+                # Check for specific class changes
                 if 'class' in patch.lower() or 'class ' in patch:
-                    changes.append("Class changes")
+                    # Extract class names if possible
+                    class_names = re.findall(r'class\s+([a-zA-Z0-9_]+)', patch)
+                    if class_names:
+                        changes.append(f"Modified classes: {', '.join(class_names)}")
+                    else:
+                        changes.append("Class changes")
+
+                # Check for API changes
                 if 'api' in patch.lower() or 'endpoint' in patch.lower():
-                    changes.append("API changes")
+                    # Extract endpoint paths if possible
+                    endpoints = re.findall(r'(?:api|endpoint)[/:]([a-zA-Z0-9_/]+)', patch)
+                    if endpoints:
+                        changes.append(f"Modified API endpoints: {', '.join(endpoints)}")
+                    else:
+                        changes.append("API changes")
+
+                # Check for bug fixes
                 if 'bug' in patch.lower() or 'fix' in patch.lower():
-                    changes.append("Bug fixes")
+                    # Try to extract bug description if possible
+                    bug_descriptions = re.findall(r'(?:bug|fix)[:\s]+([a-zA-Z0-9_\s]+)', patch)
+                    if bug_descriptions:
+                        changes.append(f"Fixed bugs: {', '.join(bug_descriptions)}")
+                    else:
+                        changes.append("Bug fixes")
+
+                # Check for test changes
                 if 'test' in patch.lower():
-                    changes.append("Test changes")
+                    # Extract test names if possible
+                    test_names = re.findall(r'test_([a-zA-Z0-9_]+)', patch)
+                    if test_names:
+                        changes.append(f"Modified tests: {', '.join(test_names)}")
+                    else:
+                        changes.append("Test changes")
 
                 # If no specific changes were detected, provide a generic message
                 if not changes:
