@@ -30,15 +30,40 @@ jobs:
           pip install PyGithub openai python-dotenv
 
       - name: Generate Release Notes
+        id: generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python .github/scripts/generate_release_notes.py
+          echo "::set-output name=status::success"
+
+      - name: Check if release notes were generated
+        run: |
+          if [ -f "release_note.txt" ]; then
+            echo "✅ Release notes file was created successfully"
+            echo "::set-output name=file_exists::true"
+          else
+            echo "❌ Release notes file was not created"
+            echo "::set-output name=file_exists::false"
+            exit 1
+          fi
+        id: check-file
 
       - name: Commit and push if changed
+        if: steps.check-file.outputs.file_exists == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add release_note.txt
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update release notes [skip ci]" && git push)
+
+      - name: Report Status
+        if: always()
+        run: |
+          if [ "${{ steps.generate-notes.outcome }}" == "success" ]; then
+            echo "✅ Release notes generation completed successfully"
+          else
+            echo "❌ Release notes generation failed"
+            echo "Check the logs above for error details"
+          fi

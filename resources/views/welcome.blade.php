@@ -19,9 +19,9 @@
         </button>
 
         <!-- Button to trigger modal for table -->
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#liveModal">
+        {{-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#liveModal">
             Launch Table modal
-        </button>
+        </button> --}}
     </div>
 
     <!-- Livewire Modal Component -->
