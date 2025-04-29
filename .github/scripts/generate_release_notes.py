@@ -58,10 +58,12 @@ def get_commit_info(repo, commit_sha):
         commit = repo.get_commit(commit_sha)
         author = commit.author.login if commit.author else 'Unknown'
         date = commit.commit.author.date.strftime('%Y-%m-%d')
-        logger.info(f"Commit info retrieved - Author: {author}, Date: {date}")
+        time = commit.commit.author.date.strftime('%H:%M:%S')
+        logger.info(f"Commit info retrieved - Author: {author}, Date: {date}, Time: {time}")
         return {
             'author': author,
             'date': date,
+            'time': time,
             'message': commit.commit.message
         }
     except Exception as e:
@@ -221,7 +223,7 @@ def format_release_notes(commit_info, changes, analysis_summary):
     notes.append("=============\n")
 
     notes.append(f"🗓️ Date: {commit_info['date']} at {commit_info['time']}")
-    notes.append(f"Author: {commit_info['author']}\n")
+    notes.append(f"👤 Author: {commit_info['author']}\n")
 
     # Add file changes
     for file in changes['files']:
