@@ -1,6 +1,31 @@
 Release Notes
 =============
 
+🔖 Version: 2.0.0
+🗓️ Date: 2025-04-29 at 09:26:07
+👤 Author: parthikhm
+
+- Modified: `.github/scripts/generate_release_notes.py`
+- Modified: `app/Http/Controllers/UserController.php`
+- Modified: `resources/views/welcome.blade.php`
+- Modified: `routes/web.php`
+
+📝 Detailed Analysis:
+
+Modified Files:
+- .github/scripts/generate_release_notes.py: Created new functions: get_repository, determine_version_increment, increment_version, analyze_file_changes, format_release_notes, Modified functions: get_repository, analyze_ui_changes, determine_version_increment, increment_version, analyze_file_changes, analyze_changes_with_ai, format_release_notes, format_release_notes, main, main, API changes (+75/-3 lines)
+- app/Http/Controllers/UserController.php: Modified functions: index, store, home, Modified classes: UserController (+14/-8 lines)
+- resources/views/welcome.blade.php: Removed Livewire component from modal, Added form fields: text, email, text, text, text, email, text, text, Modified buttons: btn btn-primary, btn btn-primary, btn-close, btn btn-secondary, btn btn-primary, Modified layout structure, Updated styling, Class changes (+31/-38 lines)
+- routes/web.php: Created new routes: POST /users, Class changes (+1/-5 lines)
+
+Total Changes: 4 files changed, 121 additions, 54 deletions
+
+==================================================
+
+
+Release Notes
+=============
+
 🗓️ Date: 2025-04-29 at 08:48:57
 👤 Author: parthikhm
 
