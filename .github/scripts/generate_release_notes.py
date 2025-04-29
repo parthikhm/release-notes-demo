@@ -386,27 +386,114 @@ def analyze_changes_with_ai(changes):
 def format_release_notes(commit_info, changes, analysis_summary, version):
     """Format the release notes in the specified format."""
     logger.info("Formatting release notes")
+
+    # Get current month and year
+    current_date = datetime.now()
+    month_year = current_date.strftime("%B %Y")
+
+    # Extract version components
+    major, minor, patch = map(int, version.split('.'))
+
+    # Create the release notes
     notes = []
-    notes.append("Release Notes")
-    notes.append("=============\n")
 
-    notes.append(f"🔖 Version: {version}")
-    notes.append(f"🗓️ Date: {commit_info['date']} at {commit_info['time']}")
-    notes.append(f"👤 Author: {commit_info['author']}\n")
+    # Header with month and version
+    notes.append(f"{month_year} (version {major}.{minor})")
+    notes.append("-" * 69)
+    notes.append("")
 
-    # Add file changes
+    # Add patch updates if there are any
+    if patch > 0:
+        for p in range(1, patch + 1):
+            notes.append(f"Update {major}.{minor}.{p}: The update addresses these issues.")
+            notes.append("")
+
+    # Welcome message
+    notes.append(f"Welcome to the {month_year} release of Your Application. There are many updates in this version that we hope you'll like, some of the key highlights include:")
+    notes.append("")
+
+    # Categorize changes
+    ui_changes = []
+    feature_changes = []
+    bug_fixes = []
+    api_changes = []
+    other_changes = []
+
+    # Analyze changes to categorize them
     for file in changes['files']:
-        if file.status == 'added':
-            notes.append(f"- Created: New file `{file.filename}`")
-        elif file.status == 'modified':
-            notes.append(f"- Modified: `{file.filename}`")
-        elif file.status == 'removed':
-            notes.append(f"- Deleted: `{file.filename}`")
+        if file.status == 'modified':
+            patch = file.patch if hasattr(file, 'patch') else ""
+
+            # UI changes
+            if file.filename.endswith(('.html', '.blade.php', '.vue', '.jsx', '.tsx', '.css', '.scss')):
+                if 'modal' in patch.lower() or 'button' in patch.lower() or 'form' in patch.lower():
+                    ui_changes.append(f"Updated UI in {file.filename}")
+                elif 'style' in patch.lower() or 'class' in patch.lower():
+                    ui_changes.append(f"Improved styling in {file.filename}")
+
+            # Feature changes
+            if '+' in patch and ('function' in patch.lower() or 'def ' in patch or 'function ' in patch):
+                function_matches = re.findall(r'^\+\s*(?:function|def)\s+([a-zA-Z0-9_]+)', patch, re.MULTILINE)
+                if function_matches:
+                    feature_changes.append(f"Added new functions in {file.filename}: {', '.join(function_matches)}")
+
+            # API changes
+            if 'api' in patch.lower() or 'endpoint' in patch.lower():
+                api_changes.append(f"Modified API in {file.filename}")
+
+            # Bug fixes
+            if 'bug' in patch.lower() or 'fix' in patch.lower():
+                bug_fixes.append(f"Fixed issues in {file.filename}")
+
+            # Other changes
+            if not any([ui_changes, feature_changes, api_changes, bug_fixes]):
+                other_changes.append(f"Updated {file.filename}")
+
+    # Add categorized sections
+    if ui_changes:
+        notes.append("User Interface")
+        notes.append("")
+        for change in ui_changes:
+            notes.append(f"- {change}")
+        notes.append("")
+
+    if feature_changes:
+        notes.append("New Features")
+        notes.append("")
+        for change in feature_changes:
+            notes.append(f"- {change}")
+        notes.append("")
+
+    if api_changes:
+        notes.append("API Improvements")
+        notes.append("")
+        for change in api_changes:
+            notes.append(f"- {change}")
+        notes.append("")
+
+    if bug_fixes:
+        notes.append("Bug Fixes")
+        notes.append("")
+        for change in bug_fixes:
+            notes.append(f"- {change}")
+        notes.append("")
+
+    if other_changes:
+        notes.append("Other Updates")
+        notes.append("")
+        for change in other_changes:
+            notes.append(f"- {change}")
+        notes.append("")
 
     # Add detailed analysis
-    notes.append("\n📝 Detailed Analysis:")
+    notes.append("Detailed Changes")
+    notes.append("")
     notes.append(analysis_summary)
-    notes.append("\n" + "="*50 + "\n")
+
+    # Add footer with version and date
+    notes.append("")
+    notes.append("-" * 69)
+    notes.append(f"Version: {version} | Date: {commit_info['date']} at {commit_info['time']} | Author: {commit_info['author']}")
 
     formatted_notes = "\n".join(notes)
     logger.info("Release notes formatted successfully")
