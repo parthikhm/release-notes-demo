@@ -1,3 +1,35 @@
+April 2025 (version 2.0)
+---------------------------------------------------------------------
+
+Welcome to the April 2025 release of Your Application. There are many updates in this version that we hope you'll like, some of the key highlights include:
+
+User Interface
+
+- Updated UI in resources/views/welcome.blade.php
+
+API Improvements
+
+- Modified API in .github/scripts/generate_release_notes.py
+
+Bug Fixes
+
+- Fixed issues in .github/scripts/generate_release_notes.py
+
+Detailed Changes
+
+
+Modified Files:
+- .github/scripts/generate_release_notes.py: Modified functions: analyze_changes_with_ai, format_release_notes, Class changes, API changes, Bug fixes (+101/-14 lines)
+- app/Http/Controllers/UserController.php: Modified functions: store, index, upsert, delete, Modified classes: UserController (+35/-8 lines)
+- app/Providers/AppServiceProvider.php: Modified functions: register, boot, Modified classes: AppServiceProvider (+2/-1 lines)
+- resources/views/welcome.blade.php: Modified layout structure, Updated styling, Function changes, Class changes (+56/-15 lines)
+- routes/web.php: Created new routes: GET /{id?}, POST /users/{id?}, GET /user/delete/{id}, Function changes, Class changes (+4/-4 lines)
+
+Total Changes: 5 files changed, 198 additions, 42 deletions
+
+---------------------------------------------------------------------
+Version: 2.0.0 | Date: 2025-04-29 at 10:59:19 | Author: parthikhm
+
 Release Notes
 =============
 
