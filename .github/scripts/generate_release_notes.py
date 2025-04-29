@@ -36,6 +36,9 @@ if not openai_api_key:
 openai.api_key = openai_api_key
 logger.info("OpenAI client initialized successfully")
 
+# Current version
+CURRENT_VERSION = "1.0.0"
+
 def get_repository():
     """Get the current repository from GitHub Actions environment."""
     github_repository = os.environ.get('GITHUB_REPOSITORY')
@@ -128,6 +131,69 @@ def analyze_ui_changes(patch):
         ui_changes.append("Updated styling")
 
     return ui_changes
+
+def determine_version_increment(changes):
+    """Determine how to increment the version based on the type of changes."""
+    major_increment = False
+    minor_increment = False
+    patch_increment = False
+
+    # Check for breaking changes (MAJOR version increment)
+    for file in changes['files']:
+        if file.status == 'modified':
+            patch = file.patch if hasattr(file, 'patch') else ""
+
+            # Check for API breaking changes
+            if 'api' in patch.lower() and ('remove' in patch.lower() or 'delete' in patch.lower()):
+                major_increment = True
+                break
+
+            # Check for database schema changes
+            if 'migration' in file.filename.lower() and 'create' in patch.lower():
+                major_increment = True
+                break
+
+    # Check for new features (MINOR version increment)
+    if not major_increment:
+        for file in changes['files']:
+            if file.status == 'added' or file.status == 'modified':
+                patch = file.patch if hasattr(file, 'patch') else ""
+
+                # Check for new functions
+                if '+' in patch and ('function' in patch.lower() or 'def ' in patch or 'function ' in patch):
+                    function_matches = re.findall(r'^\+\s*(?:function|def)\s+([a-zA-Z0-9_]+)', patch, re.MULTILINE)
+                    if function_matches:
+                        minor_increment = True
+                        break
+
+                # Check for new routes
+                if file.filename.endswith(('.php', '.routes.php')) and '+' in patch:
+                    route_matches = re.findall(r'^\+\s*Route::(get|post|put|delete|patch)\s*\([\'"]([^\'"]+)[\'"]', patch, re.MULTILINE)
+                    if route_matches:
+                        minor_increment = True
+                        break
+
+    # If no major or minor changes, increment patch
+    if not major_increment and not minor_increment:
+        patch_increment = True
+
+    return major_increment, minor_increment, patch_increment
+
+def increment_version(version, major_increment, minor_increment, patch_increment):
+    """Increment the version number based on the type of changes."""
+    major, minor, patch = map(int, version.split('.'))
+
+    if major_increment:
+        major += 1
+        minor = 0
+        patch = 0
+    elif minor_increment:
+        minor += 1
+        patch = 0
+    elif patch_increment:
+        patch += 1
+
+    return f"{major}.{minor}.{patch}"
 
 def analyze_file_changes(file):
     """Analyze changes in a specific file."""
@@ -317,13 +383,14 @@ def analyze_changes_with_ai(changes):
         logger.error(f"Failed to analyze changes: {str(e)}")
         return "Unable to generate detailed summary due to an error."
 
-def format_release_notes(commit_info, changes, analysis_summary):
+def format_release_notes(commit_info, changes, analysis_summary, version):
     """Format the release notes in the specified format."""
     logger.info("Formatting release notes")
     notes = []
     notes.append("Release Notes")
     notes.append("=============\n")
 
+    notes.append(f"🔖 Version: {version}")
     notes.append(f"🗓️ Date: {commit_info['date']} at {commit_info['time']}")
     notes.append(f"👤 Author: {commit_info['author']}\n")
 
@@ -394,11 +461,16 @@ def main():
         # Get changes
         changes = get_changes(repo, base_sha, current_sha)
 
+        # Determine version increment
+        major_increment, minor_increment, patch_increment = determine_version_increment(changes)
+        new_version = increment_version(CURRENT_VERSION, major_increment, minor_increment, patch_increment)
+        logger.info(f"Version increment: {CURRENT_VERSION} -> {new_version}")
+
         # Analyze changes
         analysis_summary = analyze_changes_with_ai(changes)
 
         # Format release notes
-        new_content = format_release_notes(commit_info, changes, analysis_summary)
+        new_content = format_release_notes(commit_info, changes, analysis_summary, new_version)
 
         # Update the file
         update_release_notes(new_content)

@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+    public function store(Request $request)
     {
-        // Handle the request to show the index page
-        return view('index');
-    }
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
+        ]);
 
-    public function home(Request $request)
-    {
-        // Handle the request to show the index page
-        return view('home');
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make('default_password'), // change as needed
+        ]);
+
+        return redirect()->back()->with('success', 'User created successfully!');
     }
 }

@@ -7,8 +7,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post('/index', [UserController::class, 'index'])->name('index');
-
-Route::get('/index/{id}', [UserController::class, 'show'])->name('show');
-
-Route::get('/home', [UserController::class, 'home'])->name('home');
+Route::post('/users', [UserController::class, 'store'])->name('users.store');
