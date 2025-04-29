@@ -3,6 +3,24 @@ April 2025 (version 2.0)
 
 Welcome to the April 2025 release of Your Application. There are many updates in this version that we hope you'll like, some of the key highlights include:
 
+✨ User Interface
+- Improved button design and functionality in welcome.blade.php
+
+🛠️ API Enhancements
+- Improved API response formatting in .github/scripts/generate_release_notes.py
+- Modified API in resources/views/welcome.blade.php
+
+🐞 Bug Fixes
+- Fixed issues in .github/scripts/generate_release_notes.py
+
+---------------------------------------------------------------------
+Version: 2.0.0 | Date: 2025-04-29 at 11:24:46 | Author: parthikhm
+
+April 2025 (version 2.0)
+---------------------------------------------------------------------
+
+Welcome to the April 2025 release of Your Application. There are many updates in this version that we hope you'll like, some of the key highlights include:
+
 User Interface
 
 - Updated UI in resources/views/welcome.blade.php
